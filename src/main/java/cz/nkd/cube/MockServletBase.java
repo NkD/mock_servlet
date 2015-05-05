@@ -3,6 +3,8 @@ package cz.nkd.cube;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -22,7 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * @author Michal Nikodim (michal.nikodim@topmonks.com)
  */
-public abstract class MockServletBase implements Servlet{
+public abstract class MockServletBase implements Servlet {
 
     public final void init(ServletConfig config) throws ServletException {
         //nothing
@@ -36,16 +38,16 @@ public abstract class MockServletBase implements Servlet{
         HttpServletRequest httpReq = (HttpServletRequest) req;
         HttpServletResponse httpResp = (HttpServletResponse) res;
         System.out.println("request: " + getServletInfo() + " - [" + new SimpleDateFormat("hh:MM:ss.SSS").format(new Date()) + "] " + httpReq.getMethod() + " " + httpReq.getPathInfo());
-        
+
         int code = getResponseCode(httpReq);
-        
+
         httpResp.getOutputStream().write(requestToJson(httpReq).getBytes("utf-8"));
         httpResp.setContentType("application/json");
         httpResp.setStatus(code);
         System.out.println("response: " + getServletInfo() + " - [" + new SimpleDateFormat("hh:MM:ss.SSS").format(new Date()) + "] " + httpReq.getMethod() + " " + httpReq.getPathInfo());
-        
+
     }
-    
+
     public abstract int getResponseCode(HttpServletRequest req);
 
     public final String getServletInfo() {
@@ -55,8 +57,7 @@ public abstract class MockServletBase implements Servlet{
     public void destroy() {
         //nothing
     }
-    
-    
+
     boolean match(HttpServletRequest req, String method, String path) {
         String m = req.getMethod();
         if (m.equalsIgnoreCase(method)) {
@@ -68,21 +69,21 @@ public abstract class MockServletBase implements Servlet{
     }
 
     void wait(int milis) {
-        System.out.println("    waiting: " +getServletInfo() + " (" + milis + " milis)");
+        System.out.println("    waiting: " + getServletInfo() + " (" + milis + " milis)");
         long doneTime = System.currentTimeMillis() + milis;
         while (System.currentTimeMillis() < doneTime) {
             //do nothing
         }
     }
-    
+
     @SuppressWarnings("rawtypes")
-     String requestToJson(HttpServletRequest req) {
+    String requestToJson(HttpServletRequest req) {
         StringBuilder sb = new StringBuilder("{\n");
 
         sb.append("    \"servlet\" : \"").append(getServletInfo()).append("\",\n");
         sb.append("    \"method\" : \"").append(req.getMethod()).append("\",\n");
-        sb.append("    \"path\" : \"").append(req.getPathInfo()).append("\",\n");
-        sb.append("    \"query\" : \"").append(req.getQueryString()).append("\",\n");
+        sb.append("    \"path\" : \"").append(urlDecode(req.getPathInfo())).append("\",\n");
+        sb.append("    \"query\" : \"").append(urlDecode(req.getQueryString())).append("\",\n");
         sb.append("    \"headers\" : {\n");
 
         Enumeration headers = req.getHeaderNames();
@@ -105,7 +106,15 @@ public abstract class MockServletBase implements Servlet{
         return sb.toString();
     }
 
-     String getPayload(HttpServletRequest req) {
+    String urlDecode(String value) {
+        try {
+            return URLDecoder.decode(value, "utf-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    String getPayload(HttpServletRequest req) {
         String payload = null;
         ServletInputStream is = null;
         try {
