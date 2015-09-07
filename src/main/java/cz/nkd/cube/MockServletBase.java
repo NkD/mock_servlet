@@ -82,8 +82,14 @@ public abstract class MockServletBase implements Servlet {
 
         sb.append("    \"servlet\" : \"").append(getServletInfo()).append("\",\n");
         sb.append("    \"method\" : \"").append(req.getMethod()).append("\",\n");
-        sb.append("    \"path\" : \"").append(urlDecode(req.getPathInfo())).append("\",\n");
-        sb.append("    \"query\" : \"").append(urlDecode(req.getQueryString())).append("\",\n");
+        sb.append("    \"incoming\" : {");
+        sb.append("        \"path\" : \"").append(req.getPathInfo()).append("\",\n");
+        sb.append("        \"query\" : \"").append(req.getQueryString()).append("\",\n");
+        sb.append("     },\n");
+        sb.append("    \"decoded\" : {");
+        sb.append("        \"path\" : \"").append(urlDecode(req.getPathInfo())).append("\",\n");
+        sb.append("        \"query\" : \"").append(urlDecode(req.getQueryString())).append("\",\n");
+        sb.append("     },\n");
         sb.append("    \"headers\" : {\n");
 
         Enumeration headers = req.getHeaderNames();
