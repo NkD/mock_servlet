@@ -114,6 +114,7 @@ public abstract class MockServletBase implements Servlet {
 
     String urlDecode(String value) {
         try {
+            if (value==null) return null;
             return URLDecoder.decode(value, "utf-8");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
