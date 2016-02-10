@@ -1,25 +1,18 @@
 package cz.nkd.cube;
 
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Michal Nikodim (michal.nikodim@topmonks.com)
@@ -37,18 +30,49 @@ public abstract class MockServletBase implements Servlet {
     public final void service(ServletRequest req, ServletResponse res) throws ServletException, IOException {
         HttpServletRequest httpReq = (HttpServletRequest) req;
         HttpServletResponse httpResp = (HttpServletResponse) res;
-        System.out.println("request: " + getServletInfo() + " - [" + new SimpleDateFormat("hh:MM:ss.SSS").format(new Date()) + "] " + httpReq.getMethod() + " " + httpReq.getPathInfo());
+        // System.out.println("request: " + getServletInfo() + " - [" + new SimpleDateFormat("hh:MM:ss.SSS").format(new Date()) + "] " + httpReq.getMethod() + " " + httpReq.getPathInfo());
 
-        int code = getResponseCode(httpReq);
-
-        httpResp.getOutputStream().write(requestToJson(httpReq).getBytes("utf-8"));
-        httpResp.setContentType("application/json");
+        byte[] bytes = requestToJson(httpReq).getBytes("utf-8");
+        httpResp.setContentLength(bytes.length);
+        int code = getResponseCode(httpReq, httpResp);
         httpResp.setStatus(code);
-        System.out.println("response: " + getServletInfo() + " - [" + new SimpleDateFormat("hh:MM:ss.SSS").format(new Date()) + "] " + httpReq.getMethod() + " " + httpReq.getPathInfo());
-
+        httpResp.setContentType("application/json");
+        if (getSlowlyResponse() > 0) {
+            System.out.println("slowlyReponse: " + getServletInfo() + " start");
+            long time = System.currentTimeMillis();
+            int[] pair = findSingleWaitAndOneChunk(getSlowlyResponse(), bytes.length, 1);
+            int singleWait = pair[0];
+            int oneChunk = pair[1];
+            int count = 0;
+            for (int i = 0; i < bytes.length; i++) {
+                httpResp.getOutputStream().write(bytes[i]);
+                httpResp.getOutputStream().flush();
+                count++;
+                if (count == oneChunk) {
+                    count = 0;
+                    long doneTime = System.currentTimeMillis() + singleWait;
+                    while (System.currentTimeMillis() < doneTime) {
+                        //do nothing
+                    }
+                }
+            }
+            System.out.println("slowlyReponse: " + getServletInfo() + " complete (" + (System.currentTimeMillis() - time) + " milis) " + oneChunk + ", " + singleWait);
+        } else {
+            httpResp.getOutputStream().write(bytes);
+        }
+        httpResp.getOutputStream().flush();
+        //  System.out.println("response: " + getServletInfo() + " - [" + new SimpleDateFormat("hh:MM:ss.SSS").format(new Date()) + "] " + httpReq.getMethod() + " " + httpReq.getPathInfo());
     }
 
-    public abstract int getResponseCode(HttpServletRequest req);
+    private int[] findSingleWaitAndOneChunk(int wait, int allBytes, int oneChunk) {
+        int singleWait = wait / (allBytes / oneChunk);
+        if (singleWait < 30 && oneChunk < (allBytes / 2)) {
+            return findSingleWaitAndOneChunk(wait, allBytes, ++oneChunk);
+        }
+        return new int[] { singleWait, oneChunk };
+    }
+
+    public abstract int getResponseCode(HttpServletRequest req, HttpServletResponse resp);
 
     public final String getServletInfo() {
         return getClass().getSimpleName();
@@ -76,6 +100,10 @@ public abstract class MockServletBase implements Servlet {
         }
     }
 
+    int getSlowlyResponse() {
+        return 0;
+    }
+
     @SuppressWarnings("rawtypes")
     String requestToJson(HttpServletRequest req) {
         StringBuilder sb = new StringBuilder("{\n");
@@ -92,8 +120,30 @@ public abstract class MockServletBase implements Servlet {
         sb.append("        \"pathInfo\" : \"").append(urlDecode(req.getPathInfo())).append("\",\n");
         sb.append("        \"query\" : \"").append(urlDecode(req.getQueryString())).append("\",\n");
         sb.append("     },\n");
-        sb.append("    \"headers\" : {\n");
+        sb.append("    \"query\" : {");
+        String queryParams = req.getQueryString();
+        if (queryParams != null) {
+            if (queryParams.startsWith("?")) queryParams = queryParams.substring(1);
+            String[] split = queryParams.split("&");
+            int i = 0;
+            for (String keyValue : split) {
+                if (i != 0) sb.append(",\n");
+                i++;
+                String key = null;
+                String value = null;
+                int equalsIndex = keyValue.indexOf("=");
+                if (equalsIndex == -1) {
+                    key = urlDecode(keyValue);
+                } else {
+                    key = urlDecode(keyValue.substring(0, equalsIndex));
+                    value = urlDecode(keyValue.substring(equalsIndex + 1));
+                }
+                sb.append("        \"").append(key).append("\" : \"").append(value).append("\"");
+            }
+        }
+        sb.append("     },\n");
 
+        sb.append("    \"headers\" : {\n");
         Enumeration headers = req.getHeaderNames();
         List<String> keys = new ArrayList<String>();
         while (headers.hasMoreElements()) {
@@ -109,14 +159,13 @@ public abstract class MockServletBase implements Servlet {
         sb.append("\n    },\n");
 
         sb.append("    \"payload\" : ").append(getPayload(req)).append("\n");
-
         sb.append("}");
         return sb.toString();
     }
 
     String urlDecode(String value) {
         try {
-            if (value==null) return null;
+            if (value == null) return null;
             return URLDecoder.decode(value, "utf-8");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);

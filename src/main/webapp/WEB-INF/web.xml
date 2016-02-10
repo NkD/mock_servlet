@@ -4,6 +4,16 @@
 
     <display-name>Mock Servlet</display-name>
 
+
+    <!--filter>
+        <filter-name>gzipFilter</filter-name>
+        <filter-class>com.planetj.servlet.filter.compression.CompressingFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>gzipFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping-->
+
     <servlet>
         <servlet-name>mockservlet1</servlet-name>
         <servlet-class>cz.nkd.cube.MockServlet1</servlet-class>
