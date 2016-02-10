@@ -26,6 +26,10 @@
         <servlet-name>mockservlet3</servlet-name>
         <servlet-class>cz.nkd.cube.MockServlet3</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>speedservlet</servlet-name>
+        <servlet-class>cz.nkd.cube.SpeedServlet</servlet-class>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>mockservlet1</servlet-name>
@@ -38,6 +42,10 @@
     <servlet-mapping>
         <servlet-name>mockservlet3</servlet-name>
         <url-pattern>/mock3/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>speedservlet</servlet-name>
+        <url-pattern>/speed</url-pattern>
     </servlet-mapping>
     <!-- Session timeout -->
     <session-config>
