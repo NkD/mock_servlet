@@ -4,10 +4,7 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,8 +16,35 @@ import java.util.List;
  */
 public abstract class MockServletBase implements Servlet {
 
+    @SuppressWarnings("unused")
+    private byte[] bigPayload;
+
     public final void init(ServletConfig config) throws ServletException {
-        //nothing
+        InputStream is = null;
+        try {
+            is = getClass().getResourceAsStream("/1MB.txt");
+            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+            int nRead;
+            byte[] data = new byte[16384];
+
+            while ((nRead = is.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, nRead);
+                if (buffer.size() > 1024)
+                    break;
+            }
+            buffer.flush();
+            bigPayload = buffer.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
     }
 
     public final ServletConfig getServletConfig() {
@@ -33,7 +57,9 @@ public abstract class MockServletBase implements Servlet {
         // System.out.println("request: " + getServletInfo() + " - [" + new SimpleDateFormat("hh:MM:ss.SSS").format(new Date()) + "] " + httpReq.getMethod() + " " + httpReq.getPathInfo());
 
         byte[] bytes = requestToJson(httpReq).getBytes("utf-8");
-        httpResp.setContentLength(bytes.length);
+        httpResp.setContentLength(bytes.length);// + bigPayload.length);
+        //httpResp.setContentLength(5);
+
         int code = getResponseCode(httpReq, httpResp);
         httpResp.setStatus(code);
         httpResp.setContentType("application/json");
@@ -59,6 +85,8 @@ public abstract class MockServletBase implements Servlet {
             System.out.println("slowlyReponse: " + getServletInfo() + " complete (" + (System.currentTimeMillis() - time) + " milis) " + oneChunk + ", " + singleWait);
         } else {
             httpResp.getOutputStream().write(bytes);
+            // httpResp.getOutputStream().write(bigPayload);
+            //httpResp.getOutputStream().write("12345".getBytes());
         }
         httpResp.getOutputStream().flush();
         //  System.out.println("response: " + getServletInfo() + " - [" + new SimpleDateFormat("hh:MM:ss.SSS").format(new Date()) + "] " + httpReq.getMethod() + " " + httpReq.getPathInfo());
@@ -86,14 +114,16 @@ public abstract class MockServletBase implements Servlet {
         String m = req.getMethod();
         if (m.equalsIgnoreCase(method)) {
             String p = req.getPathInfo();
-            if (!path.startsWith("/")) path = "/" + path;
-            if (p.equalsIgnoreCase(path)) return true;
+            if (!path.startsWith("/"))
+                path = "/" + path;
+            if (p.equalsIgnoreCase(path))
+                return true;
         }
         return false;
     }
 
     void wait(int milis) {
-        System.out.println("    waiting: " + getServletInfo() + " (" + milis + " milis)");
+        //System.out.println("    waiting: " + getServletInfo() + " (" + milis + " milis)");
         long doneTime = System.currentTimeMillis() + milis;
         while (System.currentTimeMillis() < doneTime) {
             //do nothing
@@ -123,11 +153,13 @@ public abstract class MockServletBase implements Servlet {
         sb.append("    \"query\" : {");
         String queryParams = req.getQueryString();
         if (queryParams != null) {
-            if (queryParams.startsWith("?")) queryParams = queryParams.substring(1);
+            if (queryParams.startsWith("?"))
+                queryParams = queryParams.substring(1);
             String[] split = queryParams.split("&");
             int i = 0;
             for (String keyValue : split) {
-                if (i != 0) sb.append(",\n");
+                if (i != 0)
+                    sb.append(",\n");
                 i++;
                 String key = null;
                 String value = null;
@@ -152,7 +184,8 @@ public abstract class MockServletBase implements Servlet {
         Collections.sort(keys);
         int i = 0;
         for (String key : keys) {
-            if (i != 0) sb.append(",\n");
+            if (i != 0)
+                sb.append(",\n");
             i++;
             sb.append("        \"").append(key).append("\" : \"").append(req.getHeader(key)).append("\"");
         }
@@ -165,7 +198,8 @@ public abstract class MockServletBase implements Servlet {
 
     String urlDecode(String value) {
         try {
-            if (value == null) return null;
+            if (value == null)
+                return null;
             return URLDecoder.decode(value, "utf-8");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
@@ -190,17 +224,19 @@ public abstract class MockServletBase implements Servlet {
         } catch (Throwable t) {
             payload = "\"read payload error: " + t.getMessage() + "\"";
         } finally {
-            if (is != null) try {
-                is.close();
-            } catch (IOException e) {
-                //nothing
-            }
+            if (is != null)
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    //nothing
+                }
         }
         return jsonEscape(payload);
     }
 
     String jsonEscape(String string) {
-        if (string == null || string.length() == 0) return "null";
+        if (string == null || string.length() == 0)
+            return "null";
         char c = 0;
         int i, len = string.length();
         StringBuilder sb = new StringBuilder(len + 4);

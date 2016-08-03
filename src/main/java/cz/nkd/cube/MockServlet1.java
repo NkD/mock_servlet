@@ -16,9 +16,6 @@ public class MockServlet1 extends MockServletBase {
         return code;
     }
     
-    @Override
-    int getSlowlyResponse() {
-        return 0;
-    }
+    
 
 }

@@ -17,18 +17,22 @@
     <servlet>
         <servlet-name>mockservlet1</servlet-name>
         <servlet-class>cz.nkd.cube.MockServlet1</servlet-class>
+        <load-on-startup>1</load-on-startup>
     </servlet>
     <servlet>
         <servlet-name>mockservlet2</servlet-name>
         <servlet-class>cz.nkd.cube.MockServlet2</servlet-class>
+        <load-on-startup>2</load-on-startup>
     </servlet>
     <servlet>
         <servlet-name>mockservlet3</servlet-name>
         <servlet-class>cz.nkd.cube.MockServlet3</servlet-class>
+        <load-on-startup>3</load-on-startup>
     </servlet>
     <servlet>
         <servlet-name>speedservlet</servlet-name>
         <servlet-class>cz.nkd.cube.SpeedServlet</servlet-class>
+        <load-on-startup>4</load-on-startup>
     </servlet>
 
     <servlet-mapping>
