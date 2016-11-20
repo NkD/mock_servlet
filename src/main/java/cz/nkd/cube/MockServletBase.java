@@ -143,12 +143,12 @@ public abstract class MockServletBase implements Servlet {
         sb.append("    \"incoming\" : {");
         sb.append("        \"url\" : \"").append(req.getRequestURL().toString()).append("\",\n");
         sb.append("        \"pathInfo\" : \"").append(req.getPathInfo()).append("\",\n");
-        sb.append("        \"query\" : \"").append(req.getQueryString()).append("\",\n");
+        sb.append("        \"query\" : \"").append(req.getQueryString()).append("\"\n");
         sb.append("     },\n");
         sb.append("    \"decoded\" : {");
         sb.append("        \"url\" : \"").append(urlDecode(req.getRequestURL().toString())).append("\",\n");
         sb.append("        \"pathInfo\" : \"").append(urlDecode(req.getPathInfo())).append("\",\n");
-        sb.append("        \"query\" : \"").append(urlDecode(req.getQueryString())).append("\",\n");
+        sb.append("        \"query\" : \"").append(urlDecode(req.getQueryString())).append("\"\n");
         sb.append("     },\n");
         sb.append("    \"query\" : {");
         String queryParams = req.getQueryString();
