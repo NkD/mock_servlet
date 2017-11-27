@@ -37,6 +37,10 @@
 
     <servlet-mapping>
         <servlet-name>mockservlet1</servlet-name>
+        <url-pattern>/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>mockservlet1</servlet-name>
         <url-pattern>/mock1/*</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
